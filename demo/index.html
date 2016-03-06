@@ -14,12 +14,9 @@
     <style> 
       body {  
         margin: 0;
+        padding: 100px;
         height: 100vh;
-      }
-      #container {
-        @apply(--layout-fit);
-        @apply(--layout-horizontal);
-        @apply(--layout-center-center);
+        box-sizing: border-box;
       }
       #box {
         width: 50%;
@@ -28,13 +25,11 @@
     </style>
   </head>
   <body>
-    <div id="container">
-      <div id="box">
-        <video-player>
-          <source src="buck_bunny.mp4" type="video/mp4">
-          Your browser does not support the <code>video</code> element.
-        </video-player>
-      </div>
+    <div id="box">
+      <video-player>
+        <source src="buck_bunny.mp4" type="video/mp4">
+        Your browser does not support the <code>video</code> element.
+      </video-player>
     </div>
   </body>
 </html>

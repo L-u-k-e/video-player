@@ -16,8 +16,12 @@
         max-height: 100vh;
         max-width: 100vw;
         overflow: hidden;
+        position: relative;
         @apply(--paper-font-common-base);
       }
+      :host(:not([fullscreen])) {
+        width: 854px;
+      };
 
       video {
         vertical-align: top;
@@ -88,8 +92,9 @@
         --paper-slider-active-color: var(--primary-color);
         --paper-slider-knob-color: transparent;
         
-        width: calc(100% + 30px + var(--paper-slider-height, 2px)/2);
+        width: calc(100% + 36px + var(--paper-slider-height, 2px));
         margin-left: calc(-20px - var(--paper-slider-height, 2px));
+        border: none;
       }
 
       #progress_bar.hover {
@@ -97,8 +102,6 @@
         --paper-slider-knob-start-color: var(--primary-color);
         --paper-slider-knob-start-border-color: var(--primary-color);
       }
-
-
 
 
 

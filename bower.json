@@ -28,7 +28,12 @@
     "iron-component-page": "PolymerElements/iron-component-page#^1.0.0",
     "paper-slider": "PolymerElements/paper-slider#^1.0.0",
     "lodash": "^4.6.1",
-    "fullscreen-enabled": "L-u-k-e/fullscreen-enabled#^0.5.0"
+    "fullscreen-enabled": "L-u-k-e/fullscreen-enabled#^0.5.0",
+    "paper-styles": "polymerElements/paper-styles#^1.1.4",
+    "paper-input": "PolymerElements/paper-input#^1.0.0",
+    "paper-radio-button": "PolymerElements/paper-radio-button#^1.0.0",
+    "paper-radio-group": "PolymerElements/paper-radio-group#^1.0.0",
+    "polymer-color-picker": "notwaldorf/polymer-color-picker#^1.0.1"
   },
   "devDependencies": {
     "web-component-tester": "*"

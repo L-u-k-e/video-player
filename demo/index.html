@@ -10,30 +10,71 @@
     <script src="../../lodash/dist/lodash.min.js"></script>
 
     <link rel="import" href="../../iron-flex-layout/iron-flex-layout.html">
+    <link rel="import" href="../../paper-styles/paper-styles.html">
     <link rel="import" href="../video-player.html">
-    <style> 
+    <style is="custom-style"> 
       body {  
         margin: 0;
-        padding: 100px;
-        height: 100vh;
+        @apply(--layout-fit);
+        @apply(--layout-horizontal);
+        @apply(--layout-center-center);
         box-sizing: border-box;
-      }
-      #box {
-        width: 50%;
-        height: 50%;
+        font-family: Roboto;
       }
 
+      #container {
+        @apply(--layout-horizontal);
+        width: 90%;
+      }
+      #container > * {
+        @apply(--layout-flex);
+      }
+
+      table {
+        border-spacing: 10px;
+
+      }
+      th {
+        text-align: left;
+      }
+      td:last-child,
+      th:last-child {
+        padding-left: 20px;
+        box-sizing: border-box;
+      }
     </style>
   </head>
   <body>
-    <div id="box">
-      <video-player>
-        <source src="buck_bunny.mp4" type="video/mp4">
-        Your browser does not support the <code>video</code> element.
-      </video-player>
-    </div>
+    
+    <template id="t" is="dom-bind">
+      <div id="container">
+        <div id="box">
+          <video-player
+            current-time="{{current_time}}"
+            play-state="{{play_state}}"
+            volume-level="{{volume_level}}"
+            muted="{{muted}}"
+            zoom-level="{{zoom_level}}"
+            max-zoom="{{max_zoom}}"
+            x-offset="{{x_offset}}"
+            y-offset="{{y_offset}}">
+            <source src="buck_bunny.mp4" type="video/mp4">
+            Your browser does not support the <code>video</code> element.
+          </video-player>
+        </div>
 
-    <div id="info">
-    </div>
+        <table id="info">
+          <tr>  <th> Property               </th>      <th> Value          </th>     </tr>
+          <tr>  <td><code>currentTime</code></td>      <td>[[current_time]]</td>     </tr>
+          <tr>  <td><code>playState  </code></td>      <td>[[play_state  ]]</td>     </tr>
+          <tr>  <td><code>volumeLevel</code></td>      <td>[[volume_level]]</td>     </tr>
+          <tr>  <td><code>muted      </code></td>      <td>[[muted       ]]</td>     </tr>
+          <tr>  <td><code>zoomlevel  </code></td>      <td>[[zoom_level  ]]</td>     </tr>
+          <tr>  <td><code>maxZoom    </code></td>      <td>[[max_zoom    ]]</td>     </tr>
+          <tr>  <td><code>xOffset    </code></td>      <td>[[x_offset    ]]</td>     </tr>
+          <tr>  <td><code>yOffset    </code></td>      <td>[[y_offset    ]]</td>     </tr>
+        </table>
+      </div>
+    </template>
   </body>
 </html>

@@ -1,0 +1,40 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+    
+    <title>video-player Demo</title>
+    
+    <script src="../../webcomponentsjs/webcomponents-lite.js"></script>
+    <script src="../../lodash/dist/lodash.min.js"></script>
+
+    <link rel="import" href="../../iron-flex-layout/iron-flex-layout.html">
+    <link rel="import" href="../video-player.html">
+    <style> 
+      body {  
+        margin: 0;
+        height: 100vh;
+      }
+      #container {
+        @apply(--layout-fit);
+        @apply(--layout-horizontal);
+        @apply(--layout-center-center);
+      }
+      #box {
+        width: 50%;
+        height: 50%;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="container">
+      <div id="box">
+        <video-player>
+          <source src="buck_bunny.mp4" type="video/mp4">
+          Your browser does not support the <code>video</code> element.
+        </video-player>
+      </div>
+    </div>
+  </body>
+</html>

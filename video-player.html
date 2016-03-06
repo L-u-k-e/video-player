@@ -1,0 +1,413 @@
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../iron-icons/iron-icons.html">
+<link rel="import" href="../iron-icons/av-icons.html">
+<link rel="import" href="../paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../paper-slider/paper-slider.html">
+<link rel="import" href="../iron-flex-layout/iron-flex-layout.html">
+
+<link rel="import" href="../fullscreen-enabled/fullscreen-enabled.html">
+
+<dom-module id="video-player">
+  <template>
+    <style>
+      :host {
+        display: block;
+        max-height: 100vh;
+        max-width: 100vw;
+        overflow: hidden;
+      }
+
+      video {
+        vertical-align: top;
+        width: 100%;
+        position: relative;
+      }
+
+
+
+
+
+
+      .slider_container {
+        height: 100%;
+        @apply(--layout-horizontal);
+        @apply(--layout-center);
+      }
+
+      .slider_control {
+        --volume-slider-color: var(--accent-color);
+        --paper-slider-active-color: var(--volume-slider-color);
+        --paper-slider-knob-color: var(--volume-slider-color);
+        max-width: 0px;
+        opacity: 0;
+        transition: all .2s cubic-bezier(0.4,0.0,1,1);
+        transition-delay: .2s;
+      }
+      .slider_container:hover .slider_control {
+        max-width:100px;
+        opacity: 1;
+        padding-right: 15px;
+        transition-delay: .2s;
+      }
+
+
+      #volume_controls {
+        padding-right: 15px;
+      }
+
+
+
+
+
+
+      #controls {
+        @apply(--layout-horizontal);
+        @apply(--layout-center);
+        position: relative;
+        height: 40px;
+        width: 100%;
+        background-color: rgb(0,0,0);   
+        color: white;
+      }
+
+      #spacer {
+        @apply(--layout-flex);
+      }
+
+
+
+
+
+      #progress_bar {
+        position: absolute;
+        top: calc(-15px - var(--paper-slider-height, 2px));
+        z-index: 1000;
+        --paper-slider-knob-start-border-color: transparent;
+        --paper-slider-active-color: var(--primary-color);
+        --paper-slider-knob-color: transparent;
+        
+        width: calc(100% + 30px + var(--paper-slider-height, 2px)/2);
+        margin-left: calc(-20px - var(--paper-slider-height, 2px));
+      }
+
+      #progress_bar.hover {
+        --paper-slider-knob-color: var(--primary-color);
+        --paper-slider-knob-start-color: var(--primary-color);
+        --paper-slider-knob-start-border-color: var(--primary-color);
+      }
+
+
+
+
+
+      :host([fullscreen]) #controls {
+        position: absolute;
+        bottom:0; 
+        background-color: rgba(0,0,0,0.3);
+        opacity:0;      
+        transition: opacity .25s cubic-bezier(0.0,0.0,0.2,1);
+      }
+
+      :host([fullscreen]) #controls:hover {
+        opacity: 1;
+      }
+
+
+
+    </style>
+    
+    <video id="video" 
+      volume="[[_get_ratio(volume_level)]]"
+      on-track="_pan_video"
+    >
+      <content></content>
+    </video>
+    
+    <div id="controls">
+      
+      <paper-slider id="progress_bar" 
+        on-change="update_time"
+      ></paper-slider>
+
+      <paper-icon-button 
+        icon="[[_get_play_icon(play_state)]]"              
+        on-tap="toggle_play"
+      ></paper-icon-button>
+      
+      <div id="zoom_controls" class="slider_container">
+        <paper-icon-button 
+          icon="[[_get_zoom_icon(zoom_level)]]"              
+          on-tap="toggle_zoom"
+        ></paper-icon-button>
+        <paper-slider id="zoom_slider" class="slider_control" 
+          immediate-value="{{zoom_level}}" 
+          value="[[zoom_level]]"
+        ></paper-slider>
+      </div>
+
+      <div id="volume_controls" class="slider_container">
+        <paper-icon-button 
+          icon="[[_get_volume_icon(muted, volume_level)]]"   
+          on-tap="toggle_mute"
+        ></paper-icon-button>
+        <paper-slider id="volume_slider" class="slider_control" 
+          immediate-value="{{volume_level}}" 
+          value="[[volume_level]]"
+        ></paper-slider>
+      </div>
+      <span>[[_get_time_string(current_time, duration)]]</span> 
+      
+      <div id="spacer"></div>
+      
+      <paper-icon-button 
+        icon="settings"
+      ></paper-icon-button>
+      
+      <paper-icon-button 
+        icon="[[_get_fullscreen_icon(fullscreen)]]"                               
+        on-tap="toggle_fullscreen"
+      ></paper-icon-button>
+
+    </div>
+  </template>
+  <script>
+    Polymer({
+      is: 'video-player',
+
+      behaviors: [Behaviors.fullscreen_enabled],
+
+      properties: {
+        play_state: {
+          type: String,
+          value: 'paused',
+          observer: '_play_state_changed'
+        },
+        muted: {
+          type: Boolean,
+          value: false,
+          observer: '_muted_changed'
+        },
+        current_time: {
+          type: Number,
+          value: 0.00,
+        },
+        volume_level: {
+          type: Number,
+          value: 50
+        },
+        duration: {
+          type: Number,
+          value: 0
+        },
+        zoom_level: {
+          type: Number,
+          value: 0,
+          observer: '_zoom_level_changed'
+        },
+        max_zoom: {
+          type: Number, 
+          value: 4,
+          observer: '_max_zoom_changed' /* re calc zoom-level for consistency */
+        },
+        x_offset: {
+          type: Number,
+          value: 0
+        },
+        y_offset: {
+          type: Number, 
+          value: 0
+        }
+      },
+
+      listeners: {
+        'video.tap': 'toggle_play',
+        'video.timeupdate': '_update_progress',
+        'video.loadedmetadata': '_set_duration',
+        'progress_bar.mouseover': '_toggle_progress_hover_state',
+        'progress_bar.mouseout': '_toggle_progress_hover_state',
+      },
+
+      /**
+       * State Mutators: 
+       *  Change various properties based on user actions.  
+       */
+      toggle_play: function (event, detail) {
+        if (this.play_state == 'paused' || this.play_state == 'ended') {
+          this.play_state = 'playing';
+        } else {
+          this.play_state = 'paused';
+        }     
+      },
+
+      toggle_mute: function (event, detail) {
+        if (this.muted) {
+          this.muted = false;
+          this.volume_level = this.saved_volume_level;
+        } else {
+          this.saved_volume_level = this.volume_level;
+          this.volume_level = 0;
+          this.muted = true;
+        }
+      },
+
+      toggle_fullscreen: function (event, detail) {
+        this.fullscreen = !this.fullscreen;
+      },
+
+      toggle_zoom: function (event, detail) {
+        this.zoom_level = this.zoom_level > 0 ? 0 : 50;
+      },
+
+
+      _pan_video: function (event, detail) {
+        var self = this;
+        var video = self.$.video;
+        var style = video.style;
+        var normal_dimensions = {};
+        var scaled_dimensions = video.getBoundingClientRect();
+
+        var map = [['left', 'width', 'x'], ['top', 'height', 'y']];
+        _.each(map, function (vec) {
+          var vec = {css: vec[0], dim: vec[1], axis: vec[2]};
+          normal_dimensions[vec.dim] = video[_.camelCase('offset '+vec.dim)];
+          
+          var suggested_val = self[vec.axis+'_offset'] + detail['d'+vec.axis]; 
+          var bound = (scaled_dimensions[vec.dim] - normal_dimensions[vec.dim])/2;
+
+          if (detail.state == 'end') {
+            self[vec.axis+'_offset'] = parseFloat(style[vec.css], 10);
+          } else {
+            style[vec.css] = _.clamp(suggested_val, -bound, bound) + 'px';
+          }
+        });
+      },
+
+
+
+      _set_duration: function (event, detail) {
+        this.duration = this.$.video.duration;
+      },
+
+
+      _convert_range: function(number, old_range, new_range) {
+        var old_diff = old_range[1] - old_range[0];
+        var new_diff = new_range[1] - new_range[0];
+        var value = (((number - old_range[0]) * new_diff) / old_diff) + new_range[0];
+        return value;
+      },
+
+
+      /**
+       * Video Controllers: 
+       *  Listen for state changes and control the video element accordingly.  
+       */
+       _play_state_changed: function (new_value, old_value) {
+        if (new_value == 'playing') { 
+          this.$.video.play(); 
+        } else { 
+          this.$.video.pause(); 
+        }
+       },
+
+
+      _muted_changed: function (new_value, old_value) {
+        this.$.video.muted = new_value;
+      },
+
+      _zoom_level_changed: function (new_value, old_value) {
+        var old_range = [0, 100];
+        var new_range = [1, this.max_zoom];
+        var mult = this._convert_range(new_value, old_range, new_range);
+        var transform = 'scale(' + mult + ',' +  mult + ')';
+        this.transform(transform, this.$.video);
+      },
+
+
+
+
+
+      _get_ratio: function (value_1_to_100) {
+        return value_1_to_100 / 100;
+      },
+
+
+
+
+      /** 
+       * View Directors:
+       *  Tell the view what to do based on the current state of the object. 
+       */
+      _get_play_icon: function (play_state) {
+        var icon = 'av:play-arrow';
+        if (play_state == 'playing') { 
+          icon = 'av:pause' 
+        } else if (play_state == 'ended') {
+          icon = 'av:replay';
+        }
+        return icon;
+      },
+
+      _get_volume_icon: function (muted, volume_level) {
+        var icon = 'av:volume-up';
+        if (muted || volume_level == 0) {
+          icon = 'av:volume-mute';  
+        } else if (volume_level <= 50) {
+          icon = 'av:volume-down';
+        }
+        return icon;
+      },
+
+      _get_fullscreen_icon: function(fullscreen) {
+        var icon = fullscreen ? 'fullscreen-exit' : 'fullscreen';
+        return icon;
+      },
+
+      _get_zoom_icon: function(zoom_level) {
+        var icon = zoom_level > 0 ? 'zoom-out' : 'zoom-in';
+        return icon;
+      },
+
+
+
+
+
+      _get_time_string: function (current_time, duration) {
+        var curr = this._format_time(current_time);
+        var durr = this._format_time(duration);
+        return curr + ' / ' + durr;
+      },
+
+      _format_time: function (seconds) {
+        var minutes = Math.floor(seconds / 60);
+        minutes = (minutes >= 10) ? minutes : "0" + minutes;
+        var seconds = Math.floor(seconds % 60);
+        seconds = (seconds >= 10) ? seconds : "0" + seconds;
+        return minutes + ":" + seconds;
+      },
+
+
+
+
+
+
+
+
+
+
+      _update_progress: function (event, detail) {
+        this.$.progress_bar.value = (100 / this.$.video.duration) * this.$.video.currentTime;
+        this.current_time = this.$.video.currentTime;
+      },
+
+      update_time: function (event, detail) {
+        this.$.video.currentTime = this.$.video.duration * (this.$.progress_bar.value / 100);
+      },
+
+      _toggle_progress_hover_state: function (event, detail) {
+        this.$.progress_bar.classList.toggle('hover');
+        this.updateStyles();
+      },
+
+    });
+  </script>
+</dom-module>

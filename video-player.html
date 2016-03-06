@@ -122,7 +122,7 @@
     </style>
     
     <video id="video" 
-      volume="[[_get_ratio(volume_level)]]"
+      volume="[[_get_ratio(volumeLevel)]]"
       on-track="_pan_video"
     >
       <content></content>
@@ -135,32 +135,32 @@
       ></paper-slider>
 
       <paper-icon-button 
-        icon="[[_get_play_icon(play_state)]]"              
+        icon="[[_get_play_icon(playState)]]"              
         on-tap="toggle_play"
       ></paper-icon-button>
       
       <div id="zoom_controls" class="slider_container">
         <paper-icon-button 
-          icon="[[_get_zoom_icon(zoom_level)]]"              
+          icon="[[_get_zoom_icon(zoomLevel)]]"              
           on-tap="toggle_zoom"
         ></paper-icon-button>
         <paper-slider id="zoom_slider" class="slider_control" 
-          immediate-value="{{zoom_level}}" 
-          value="[[zoom_level]]"
+          immediate-value="{{zoomLevel}}" 
+          value="[[zoomLevel]]"
         ></paper-slider>
       </div>
 
       <div id="volume_controls" class="slider_container">
         <paper-icon-button 
-          icon="[[_get_volume_icon(muted, volume_level)]]"   
+          icon="[[_get_volume_icon(muted, volumeLevel)]]"   
           on-tap="toggle_mute"
         ></paper-icon-button>
         <paper-slider id="volume_slider" class="slider_control" 
-          immediate-value="{{volume_level}}" 
-          value="[[volume_level]]"
+          immediate-value="{{volumeLevel}}" 
+          value="[[volumeLevel]]"
         ></paper-slider>
       </div>
-      <span>[[_get_time_string(current_time, duration)]]</span> 
+      <span>[[_get_time_string(currentTime, duration)]]</span> 
       
       <div id="spacer"></div>
       
@@ -182,50 +182,60 @@
       behaviors: [Behaviors.fullscreen_enabled],
 
       properties: {
-        play_state: {
+
+        playState: {
           type: String,
           value: 'paused',
+          notify: true,
           observer: '_play_state_changed'
         },
         muted: {
           type: Boolean,
           value: false,
+          notify: true,
           observer: '_muted_changed'
         },
-        current_time: {
+        currentTime: {
           type: Number,
           value: 0.00,
+          notify: true
         },
-        volume_level: {
+        volumeLevel: {
           type: Number,
-          value: 50
+          value: 50,
+          notify: true
         },
         duration: {
           type: Number,
-          value: 0
+          value: 0,
+          notify: true
         },
-        zoom_level: {
+        zoomLevel: {
           type: Number,
           value: 0,
+          notify: true,
           observer: '_zoom_level_changed'
         },
-        max_zoom: {
+        maxZoom: {
           type: Number, 
           value: 4,
+          notify: true,
           observer: '_max_zoom_changed' /* re calc zoom-level for consistency */
         },
-        x_offset: {
+        xOffset: {
           type: Number,
-          value: 0
+          value: 0,
+          notify: true,
         },
-        y_offset: {
+        yOffset: {
           type: Number, 
-          value: 0
+          value: 0,
+          notify: true,
         }
       },
 
       listeners: {
-        'video.tap': 'toggle_play',
+        'video.tap': '_toggle_play',
         'video.timeupdate': '_update_progress',
         'video.loadedmetadata': '_set_duration',
         'progress_bar.mouseover': '_toggle_progress_hover_state',
@@ -236,31 +246,31 @@
        * State Mutators: 
        *  Change various properties based on user actions.  
        */
-      toggle_play: function (event, detail) {
-        if (this.play_state == 'paused' || this.play_state == 'ended') {
-          this.play_state = 'playing';
+      toggle_play: function () {
+        if (this.playState == 'paused' || this.playState == 'ended') {
+          this.playState = 'playing';
         } else {
-          this.play_state = 'paused';
+          this.playState = 'paused';
         }     
       },
 
-      toggle_mute: function (event, detail) {
+      toggle_mute: function () {
         if (this.muted) {
           this.muted = false;
-          this.volume_level = this.saved_volume_level;
+          this.volumeLevel = this._saved_volume_level;
         } else {
-          this.saved_volume_level = this.volume_level;
-          this.volume_level = 0;
+          this._saved_volume_level = this.volumeLevel;
+          this.volumeLevel = 0;
           this.muted = true;
         }
       },
 
-      toggle_fullscreen: function (event, detail) {
+      toggle_fullscreen: function () {
         this.fullscreen = !this.fullscreen;
       },
 
-      toggle_zoom: function (event, detail) {
-        this.zoom_level = this.zoom_level > 0 ? 0 : 50;
+      toggle_zoom: function () {
+        this.zoomLevel = this.zoomLevel > 0 ? 0 : 50;
       },
 
 
@@ -276,11 +286,11 @@
           var vec = {css: vec[0], dim: vec[1], axis: vec[2]};
           normal_dimensions[vec.dim] = video[_.camelCase('offset '+vec.dim)];
           
-          var suggested_val = self[vec.axis+'_offset'] + detail['d'+vec.axis]; 
+          var suggested_val = self[vec.axis+'Offset'] + detail['d'+vec.axis]; 
           var bound = (scaled_dimensions[vec.dim] - normal_dimensions[vec.dim])/2;
 
           if (detail.state == 'end') {
-            self[vec.axis+'_offset'] = parseFloat(style[vec.css], 10);
+            self[vec.axis+'Offset'] = parseFloat(style[vec.css], 10);
           } else {
             style[vec.css] = _.clamp(suggested_val, -bound, bound) + 'px';
           }
@@ -307,10 +317,19 @@
        *  Listen for state changes and control the video element accordingly.  
        */
        _play_state_changed: function (new_value, old_value) {
+        if (['playing', 'paused', 'ended'].indexOf(new_value) === -1) { 
+          console.log(new_value);
+          this.playState = old_value; 
+          return;
+        }
+
         if (new_value == 'playing') { 
           this.$.video.play(); 
         } else { 
           this.$.video.pause(); 
+          if (new_value == 'ended' && this.currentTime !== this.duration) {
+            this.currentTime = this.duration;
+          }
         }
        },
 
@@ -321,7 +340,7 @@
 
       _zoom_level_changed: function (new_value, old_value) {
         var old_range = [0, 100];
-        var new_range = [1, this.max_zoom];
+        var new_range = [1, this.maxZoom];
         var mult = this._convert_range(new_value, old_range, new_range);
         var transform = 'scale(' + mult + ',' +  mult + ')';
         this.transform(transform, this.$.video);
@@ -401,7 +420,7 @@
 
       _update_progress: function (event, detail) {
         this.$.progress_bar.value = (100 / this.$.video.duration) * this.$.video.currentTime;
-        this.current_time = this.$.video.currentTime;
+        this.currentTime = this.$.video.currentTime;
       },
 
       update_time: function (event, detail) {

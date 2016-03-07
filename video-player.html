@@ -263,7 +263,7 @@
       ],
 
       listeners: {
-        'video.tap': '_toggle_play',
+        'video.tap': 'toggle_play',
         'video.timeupdate': '_update_progress',
         'video.loadedmetadata': '_set_duration',
         'progress_bar.mouseover': '_toggle_progress_hover_state',
@@ -316,6 +316,7 @@
         this.zoomLevel = this.zoomLevel > 0 ? 0 : 50;
       },
 
+
       /** 
        * Pans the video. 
        *
@@ -339,35 +340,6 @@
           this.yOffset = y;
         }
       },
-
-      /*var arg_map = {x: event, y: detail};
-        var self = this;
-        var video = self.$.video;
-        var style = video.style;
-        var normal_dimensions = {};
-        var scaled_dimensions = video.getBoundingClientRect();
-        var suggested_values = {};
-        var bounding_values  = {};
-
-        var map = [['left', 'width', 'x'], ['top', 'height', 'y']];
-        _.each(map, function (vec) {
-          var vec = {css: vec[0], dim: vec[1], axis: vec[2]};
-          normal_dimensions[vec.dim] = video[_.camelCase('offset '+vec.dim)];  
-          bounding_values[vec.axis]  = (scaled_dimensions[vec.dim] - normal_dimensions[vec.dim])/2;
-          var bound = bounding_values[vec.axis];
-          if (event.target) {
-            suggested_values[vec.axis] = self[vec.axis+'OffsetBeforeDrag'] + detail['d'+vec.axis]; 
-          } else {
-            suggested_values[vec.axis] = arg_map[vec.axis];
-          }
-
-          if (detail.state == 'end') {
-            self['_set'+_.capitalize(vec.axis)+'OffsetBeforeDrag'](parseFloat(style[vec.css], 10));
-          } else {
-            self[vec.axis+'Offset'] = _.clamp(suggested_values[vec.axis], -bound, bound) + 'px';
-          }
-        });*/
-      
 
 
 

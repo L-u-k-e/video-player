@@ -7,7 +7,9 @@
 <link rel="import" href="../paper-styles/paper-styles.html">
 
 <link rel="import" href="../fullscreen-enabled/fullscreen-enabled.html">
-
+<!--
+  @demo demo/index.html
+-->
 <dom-module id="video-player">
   <template>
     <style>
@@ -123,7 +125,7 @@
     
     <video id="video" 
       volume="[[_get_ratio(volumeLevel)]]"
-      on-track="_pan_video"
+      on-track="pan_video"
     >
       <content></content>
     </video>
@@ -131,7 +133,7 @@
     <div id="controls">
       
       <paper-slider id="progress_bar" 
-        on-change="update_time"
+        on-change="_update_time"
       ></paper-slider>
 
       <paper-icon-button 
@@ -182,55 +184,79 @@
       behaviors: [Behaviors.fullscreen_enabled],
 
       properties: {
-
+        /** The current play state. May be: `playing` / `paused` / `ended`. */
         playState: {
           type: String,
           value: 'paused',
           notify: true,
           observer: '_play_state_changed'
         },
+        /** Whether the video is currently muted. */
         muted: {
           type: Boolean,
           value: false,
           notify: true,
           observer: '_muted_changed'
         },
+        /** The current time of the video. */
         currentTime: {
           type: Number,
           value: 0.00,
           notify: true
         },
+        /** The current volume level. */
         volumeLevel: {
           type: Number,
           value: 50,
           notify: true
         },
+        /** The video duration */
         duration: {
           type: Number,
           value: 0,
           notify: true
         },
+        /* The current zoom level as a percentage of the maximum zoom factor. */
         zoomLevel: {
           type: Number,
           value: 0,
           notify: true,
           observer: '_zoom_level_changed'
         },
+        /* The maximimum zoom factor. */
         maxZoom: {
           type: Number, 
           value: 4,
           notify: true,
           observer: '_max_zoom_changed' /* re calc zoom-level for consistency */
         },
+        /* The `xOffset` of the center pixel. */
         xOffset: {
           type: Number,
           value: 0,
           notify: true,
+          observer: '_offset_changed'
         },
+        /* The `yOffset` of the center pixel. */
         yOffset: {
           type: Number, 
           value: 0,
           notify: true,
+          observer: '_offset_changed'
+        },
+        /* The X offset before any currently occurring drag gestures. */
+        xOffsetBeforeDrag: {
+          type: Number,
+          value: 0,
+          notify: true,
+          readOnly: true
+        },
+        /* The Y offset before any currently occurring drag gestures. */
+        yOffsetBeforeDrag: {
+          type: Number,
+          value: 0,
+          notify: true,
+          readOnly: true
         }
       },
 
@@ -242,10 +268,19 @@
         'progress_bar.mouseout': '_toggle_progress_hover_state',
       },
 
+
+
+
+
+
       /**
        * State Mutators: 
-       *  Change various properties based on user actions.  
+       *  Change state variables based on user interactions.  
+       *  Can also be called directly by the user for convenience.
        */
+
+
+       /** Toggles the play state between `paused`/`ended` and `playing`. */
       toggle_play: function () {
         if (this.playState == 'paused' || this.playState == 'ended') {
           this.playState = 'playing';
@@ -254,6 +289,8 @@
         }     
       },
 
+
+      /** Toggles the mute state. Saves/restores the volume level. */
       toggle_mute: function () {
         if (this.muted) {
           this.muted = false;
@@ -265,57 +302,60 @@
         }
       },
 
+
+      /** Toggles fullscreen mode */
       toggle_fullscreen: function () {
         this.fullscreen = !this.fullscreen;
       },
 
+
+      /** Toggles the zoom level between 0 and 50. */
       toggle_zoom: function () {
         this.zoomLevel = this.zoomLevel > 0 ? 0 : 50;
       },
 
 
-      _pan_video: function (event, detail) {
+      pan_video: function (event, detail) {
+        var arg_map = {x: event, y: detail};
         var self = this;
         var video = self.$.video;
         var style = video.style;
         var normal_dimensions = {};
         var scaled_dimensions = video.getBoundingClientRect();
+        var suggested_values = {};
+        var bounding_values  = {};
 
         var map = [['left', 'width', 'x'], ['top', 'height', 'y']];
         _.each(map, function (vec) {
           var vec = {css: vec[0], dim: vec[1], axis: vec[2]};
-          normal_dimensions[vec.dim] = video[_.camelCase('offset '+vec.dim)];
-          
-          var suggested_val = self[vec.axis+'Offset'] + detail['d'+vec.axis]; 
-          var bound = (scaled_dimensions[vec.dim] - normal_dimensions[vec.dim])/2;
+          normal_dimensions[vec.dim] = video[_.camelCase('offset '+vec.dim)];  
+          bounding_values[vec.axis]  = (scaled_dimensions[vec.dim] - normal_dimensions[vec.dim])/2;
+          var bound = bounding_values[vec.axis];
+          if (event.target) {
+            suggested_values[vec.axis] = self[vec.axis+'OffsetBeforeDrag'] + detail['d'+vec.axis]; 
+          } else {
+            suggested_values[vec.axis] = arg_map[vec.axis];
+          }
 
           if (detail.state == 'end') {
-            self[vec.axis+'Offset'] = parseFloat(style[vec.css], 10);
+            self['_set'+_.capitalize(vec.axis)+'OffsetBeforeDrag'](parseFloat(style[vec.css], 10));
           } else {
-            style[vec.css] = _.clamp(suggested_val, -bound, bound) + 'px';
+            self[vec.axis+'Offset'] = _.clamp(suggested_values[vec.axis], -bound, bound) + 'px';
           }
         });
       },
 
 
 
-      _set_duration: function (event, detail) {
-        this.duration = this.$.video.duration;
-      },
 
 
-      _convert_range: function(number, old_range, new_range) {
-        var old_diff = old_range[1] - old_range[0];
-        var new_diff = new_range[1] - new_range[0];
-        var value = (((number - old_range[0]) * new_diff) / old_diff) + new_range[0];
-        return value;
-      },
 
-
-      /**
-       * Video Controllers: 
-       *  Listen for state changes and control the video element accordingly.  
+      /*
+       * Video Controllers (State Observers): 
+       *   Respond to state changes by validating and manipulating the video element accordingly.  
        */
+
+
        _play_state_changed: function (new_value, old_value) {
         if (['playing', 'paused', 'ended'].indexOf(new_value) === -1) { 
           console.log(new_value);
@@ -338,6 +378,7 @@
         this.$.video.muted = new_value;
       },
 
+
       _zoom_level_changed: function (new_value, old_value) {
         var old_range = [0, 100];
         var new_range = [1, this.maxZoom];
@@ -347,20 +388,19 @@
       },
 
 
-
-
-
-      _get_ratio: function (value_1_to_100) {
-        return value_1_to_100 / 100;
+      _offset_changed: function (new_value, old_value) {
+        this.$.video.style.left = this.xOffset; 
+        this.$.video.style.top  = this.yOffset;
       },
 
 
 
 
-      /** 
-       * View Directors:
-       *  Tell the view what to do based on the current state of the object. 
+      /*
+       * State Reflectors:
+       *  Ensure that the view reflects the current state of the object. 
        */
+
       _get_play_icon: function (play_state) {
         var icon = 'av:play-arrow';
         if (play_state == 'playing') { 
@@ -370,6 +410,7 @@
         }
         return icon;
       },
+
 
       _get_volume_icon: function (muted, volume_level) {
         var icon = 'av:volume-up';
@@ -381,18 +422,17 @@
         return icon;
       },
 
+
       _get_fullscreen_icon: function(fullscreen) {
         var icon = fullscreen ? 'fullscreen-exit' : 'fullscreen';
         return icon;
       },
 
+
       _get_zoom_icon: function(zoom_level) {
         var icon = zoom_level > 0 ? 'zoom-out' : 'zoom-in';
         return icon;
       },
-
-
-
 
 
       _get_time_string: function (current_time, duration) {
@@ -415,15 +455,14 @@
 
 
 
-
-
+      /* Something needs to be done to make these adhere to teh structural style above */
 
       _update_progress: function (event, detail) {
         this.$.progress_bar.value = (100 / this.$.video.duration) * this.$.video.currentTime;
         this.currentTime = this.$.video.currentTime;
       },
 
-      update_time: function (event, detail) {
+      _update_time: function (event, detail) {
         this.$.video.currentTime = this.$.video.duration * (this.$.progress_bar.value / 100);
       },
 
@@ -431,6 +470,24 @@
         this.$.progress_bar.classList.toggle('hover');
         this.updateStyles();
       },
+
+      _get_ratio: function (value_1_to_100) {
+        return value_1_to_100 / 100;
+      },
+
+
+      _set_duration: function (event, detail) {
+        this.duration = this.$.video.duration;
+      },
+
+      _convert_range: function(number, old_range, new_range) {
+        var old_diff = old_range[1] - old_range[0];
+        var new_diff = new_range[1] - new_range[0];
+        var value = (((number - old_range[0]) * new_diff) / old_diff) + new_range[0];
+        return value;
+      },
+
+
 
     });
   </script>

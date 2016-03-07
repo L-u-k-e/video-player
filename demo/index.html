@@ -45,7 +45,7 @@
     </style>
   </head>
   <body>
-    
+
     <template id="t" is="dom-bind">
       <div id="container">
         <div id="box">
@@ -57,22 +57,28 @@
             zoom-level="{{zoom_level}}"
             max-zoom="{{max_zoom}}"
             x-offset="{{x_offset}}"
-            y-offset="{{y_offset}}">
+            y-offset="{{y_offset}}"
+            x-offset-before-drag="{{x_offset_before_drag}}"
+            y-offset-before-drag="{{y_offset_before_drag}}"
+          >
             <source src="buck_bunny.mp4" type="video/mp4">
             Your browser does not support the <code>video</code> element.
           </video-player>
         </div>
 
         <table id="info">
-          <tr>  <th> Property               </th>      <th> Value          </th>     </tr>
-          <tr>  <td><code>currentTime</code></td>      <td>[[current_time]]</td>     </tr>
-          <tr>  <td><code>playState  </code></td>      <td>[[play_state  ]]</td>     </tr>
-          <tr>  <td><code>volumeLevel</code></td>      <td>[[volume_level]]</td>     </tr>
-          <tr>  <td><code>muted      </code></td>      <td>[[muted       ]]</td>     </tr>
-          <tr>  <td><code>zoomlevel  </code></td>      <td>[[zoom_level  ]]</td>     </tr>
-          <tr>  <td><code>maxZoom    </code></td>      <td>[[max_zoom    ]]</td>     </tr>
-          <tr>  <td><code>xOffset    </code></td>      <td>[[x_offset    ]]</td>     </tr>
-          <tr>  <td><code>yOffset    </code></td>      <td>[[y_offset    ]]</td>     </tr>
+          <tr>  <th>      Property                </th>      <th>  Value                 </th>     </tr>
+          <!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
+          <tr>  <td><code>currentTime      </code></td>      <td>[[current_time        ]]</td>     </tr>
+          <tr>  <td><code>playState        </code></td>      <td>[[play_state          ]]</td>     </tr>
+          <tr>  <td><code>volumeLevel      </code></td>      <td>[[volume_level        ]]</td>     </tr>
+          <tr>  <td><code>muted            </code></td>      <td>[[muted               ]]</td>     </tr>
+          <tr>  <td><code>zoomlevel        </code></td>      <td>[[zoom_level          ]]</td>     </tr>
+          <tr>  <td><code>maxZoom          </code></td>      <td>[[max_zoom            ]]</td>     </tr>
+          <tr>  <td><code>xOffset          </code></td>      <td>[[x_offset            ]]</td>     </tr>
+          <tr>  <td><code>yOffset          </code></td>      <td>[[y_offset            ]]</td>     </tr>
+          <tr>  <td><code>xOffsetBeforeDrag</code></td>      <td>[[x_offset_before_drag]]</td>     </tr>
+          <tr>  <td><code>yOffsetBeforeDrag</code></td>      <td>[[y_offset_before_drag]]</td>     </tr>
         </table>
       </div>
     </template>

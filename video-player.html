@@ -355,7 +355,6 @@
 
        _play_state_changed: function (new_value, old_value) {
         if (['playing', 'paused', 'ended'].indexOf(new_value) === -1) { 
-          console.log(new_value);
           this.playState = old_value; 
           return;
         }
@@ -389,8 +388,6 @@
       },
 
       _offset_changed: function (x, y) {
-        console.log(x);
-        console.log(y);
         var self = this;
         var components = {
           x: {value: x, dimension: 'width',  css: 'left'},
@@ -403,9 +400,6 @@
           var scaled   = scaled_dimensions[obj.dimension];  
           var boundary = (scaled - unscaled) / 2;
           var value = _.clamp(obj.value, -boundary, boundary);
-          console.log(value);
-          console.log(scaled);
-          console.log(boundary);
           self.$.video.style[obj.css] = value + 'px';
         });
       },

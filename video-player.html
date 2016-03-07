@@ -235,14 +235,12 @@
           type: Number,
           value: 0,
           notify: true,
-          observer: '_offset_changed'
         },
         /* The `yOffset` of the center pixel. */
         yOffset: {
           type: Number, 
           value: 0,
           notify: true,
-          observer: '_offset_changed'
         },
         /* The X offset before any currently occurring drag gestures. */
         xOffsetBeforeDrag: {
@@ -259,6 +257,10 @@
           readOnly: true
         }
       },
+
+      observers: [
+        '_offset_changed(xOffset, yOffset)'
+      ],
 
       listeners: {
         'video.tap': '_toggle_play',
@@ -314,9 +316,31 @@
         this.zoomLevel = this.zoomLevel > 0 ? 0 : 50;
       },
 
+      /** 
+       * Pans the video. 
+       *
+       *   - if `delta` is **falsey**: `x` and `y` are direct mapped to `[xy]Offset`.  
+       *   - if `delta` is **truthy**: `x` and `y` are treated as delta changes to `[xy]Offset`.
+       */
+      pan_video: function (x, y, delta) {
+        var detail = y;
+        if (x.target) {
+          this.xOffset = this.xOffsetBeforeDrag + detail.dx;
+          this.yOffset = this.yOffsetBeforeDrag + detail.dy;
+          if (detail.state == 'end') {
+            this._setXOffsetBeforeDrag(parseFloat(this.$.video.style.left, 10));
+            this._setYOffsetBeforeDrag(parseFloat(this.$.video.style.top,  10));
+          }
+        } else if (delta) {
+          this.xOffset = this.xOffset + x; 
+          this.yOffset = this.yOffset + y; 
+        } else {
+          this.xOffset = x;
+          this.yOffset = y;
+        }
+      },
 
-      pan_video: function (event, detail) {
-        var arg_map = {x: event, y: detail};
+      /*var arg_map = {x: event, y: detail};
         var self = this;
         var video = self.$.video;
         var style = video.style;
@@ -342,8 +366,8 @@
           } else {
             self[vec.axis+'Offset'] = _.clamp(suggested_values[vec.axis], -bound, bound) + 'px';
           }
-        });
-      },
+        });*/
+      
 
 
 
@@ -352,7 +376,8 @@
 
       /*
        * Video Controllers (State Observers): 
-       *   Respond to state changes by validating and manipulating the video element accordingly.  
+       *   Respond to state changes.
+       *   Validating first, then manipulate the video element accordingly.  
        */
 
 
@@ -388,9 +413,26 @@
       },
 
 
-      _offset_changed: function (new_value, old_value) {
-        this.$.video.style.left = this.xOffset; 
-        this.$.video.style.top  = this.yOffset;
+      _offset_changed: function (x, y) {
+        console.log(x);
+        console.log(y);
+        var self = this;
+        var components = {
+          x: {value: x, dimension: 'width',  css: 'left'},
+          y: {value: y, dimension: 'height', css: 'top' }
+        };
+        
+        var scaled_dimensions = this.$.video.getBoundingClientRect();
+        _.each(components, function (obj, key) {
+          var unscaled = self.$.video[_.camelCase('offset '+obj.dimension)];
+          var scaled   = scaled_dimensions[obj.dimension];  
+          var boundary = (scaled - unscaled) / 2;
+          var value = _.clamp(obj.value, -boundary, boundary);
+          console.log(value);
+          console.log(scaled);
+          console.log(boundary);
+          self.$.video.style[obj.css] = value + 'px';
+        });
       },
 
 

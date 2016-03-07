@@ -166,7 +166,7 @@
       
       <div id="spacer"></div>
       
-      <paper-icon-button 
+      <paper-icon-button hidden 
         icon="settings"
       ></paper-icon-button>
       
@@ -228,7 +228,7 @@
           type: Number, 
           value: 4,
           notify: true,
-          observer: '_max_zoom_changed' /* re calc zoom-level for consistency */
+          observer: '_max_zoom_changed' 
         },
         /* The `xOffset` of the center pixel. */
         xOffset: {

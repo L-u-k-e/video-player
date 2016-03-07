@@ -384,6 +384,9 @@
         this.transform(transform, this.$.video);
       },
 
+      _max_zoom_changed: function (new_value, old_value) {
+        this._zoom_level_changed(this.zoomLevel);
+      },
 
       _offset_changed: function (x, y) {
         console.log(x);

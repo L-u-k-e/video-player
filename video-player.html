@@ -431,7 +431,8 @@
         }
 
         if (new_value == 'playing') { 
-          this.$.video.play(); 
+          if (old_value = 'ended') { this.currentTime = 0; }
+          this.$.video.play();  
         } else { 
           this.$.video.pause(); 
           if (new_value == 'ended' && this.currentTime !== this.duration) {
@@ -473,7 +474,7 @@
           x: {value: x, dimension: 'width',  css: 'left'},
           y: {value: y, dimension: 'height', css: 'top' }
         };
-        
+
         var scaled_dimensions = this.$.video.getBoundingClientRect();
         _.each(components, function (obj, key) {
           var unscaled = self.$.video[_.camelCase('offset '+obj.dimension)];
@@ -486,7 +487,7 @@
 
 
       _current_time_changed: function(new_value, old_value) {
-        if(this.duration > 0 && !_.inRange(new_value, this.duration)) {
+        if(this.duration > 0 && !_.inRange(new_value, this.duration+0.0001)) {
           this.currentTime = old_value;
           return;
         }

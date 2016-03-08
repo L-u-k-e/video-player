@@ -207,9 +207,7 @@
       is: 'video-player',
 
 
-
       behaviors: [Behaviors.fullscreen_enabled],
-
 
 
       properties: {
@@ -289,11 +287,9 @@
       },
 
 
-
       observers: [
         '_offset_changed(xOffset, yOffset)'
       ],
-
 
 
       listeners: {
@@ -304,6 +300,7 @@
         'progress_bar.mouseover': '_toggle_progress_hover_state',
         'progress_bar.mouseout': '_toggle_progress_hover_state',
       },
+
 
       /* Duration can't be set until the video's metadata loads */
       _set_duration: function (event, detail) {
@@ -325,7 +322,6 @@
        */
 
 
-
        /** Toggles the play state between `paused`/`ended` and `playing`. */
       toggle_play: function () {
         if (this.playState == 'paused' || this.playState == 'ended') {
@@ -334,7 +330,6 @@
           this.playState = 'paused';
         }     
       },
-
 
 
       /** Toggles the mute state. Saves/restores the volume level. */
@@ -350,19 +345,16 @@
       },
 
 
-
       /** Toggles fullscreen mode */
       toggle_fullscreen: function () {
         this.fullscreen = !this.fullscreen;
       },
 
 
-
       /** Toggles the zoom level between 0 and 50. */
       toggle_zoom: function () {
         this.zoomLevel = this.zoomLevel > 0 ? 0 : 50;
       },
-
 
 
       /** 
@@ -432,7 +424,6 @@
        */
 
 
-
        _play_state_changed: function (new_value, old_value) {
         if (['playing', 'paused', 'ended'].indexOf(new_value) === -1) { 
           this.playState = old_value; 
@@ -450,11 +441,9 @@
        },
 
 
-
       _muted_changed: function (new_value, old_value) {
         this.$.video.muted = new_value;
       },
-
 
 
       _zoom_level_changed: function (new_value, old_value) {
@@ -473,11 +462,9 @@
       },
 
 
-
       _max_zoom_changed: function (new_value, old_value) {
         this._zoom_level_changed(this.zoomLevel);
       },
-
 
 
       _offset_changed: function (x, y) {
@@ -507,10 +494,6 @@
         if (!this._incrementing_time) { 
           this.$.video.currentTime = new_value; 
         }
-        console.log(this.currentTime);
-        console.log(this.duration);
-        console.dir(this.$.video);
-        if (this.$.video.ended) { this.play_state = 'ended'; }
         this._incrementing_time = false;
       },
 
@@ -527,7 +510,6 @@
        */
 
 
-
       _get_play_icon: function (play_state) {
         var icon = 'av:play-arrow';
         if (play_state == 'playing') { 
@@ -537,7 +519,6 @@
         }
         return icon;
       },
-
 
 
       _get_volume_icon: function (muted, volume_level) {
@@ -551,19 +532,16 @@
       },
 
 
-
       _get_fullscreen_icon: function(fullscreen) {
         var icon = fullscreen ? 'fullscreen-exit' : 'fullscreen';
         return icon;
       },
 
 
-
       _get_zoom_icon: function(zoom_level) {
         var icon = zoom_level > 0 ? 'zoom-out' : 'zoom-in';
         return icon;
       },
-
 
 
       _get_time_string: function (current_time, duration) {

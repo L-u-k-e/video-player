@@ -78,19 +78,20 @@ Custom property | Description | Default
         position: absolute;
         top: calc(-15px - var(--paper-slider-height, 2px));
         z-index: 1000;
-        --paper-slider-knob-start-border-color: transparent;
-        --paper-slider-active-color: var(--video-player-progress-color, --primary-color);
-        --paper-slider-knob-color: transparent;
-        
         width: calc(100% + 36px + var(--paper-slider-height, 2px));
         margin-left: calc(-20px - var(--paper-slider-height, 2px));
         border: none;
+        
+        --paper-slider-knob-start-border-color: transparent;
+        --main-slider-color: var(--video-player-progress-color, --primary-color);
+        --paper-slider-active-color: var(--main-slider-color);
+        --paper-slider-knob-color: transparent;
       }
 
       #progress_bar.hover {
-        --paper-slider-knob-color: var(--primary-color);
-        --paper-slider-knob-start-color: var(--primary-color);
-        --paper-slider-knob-start-border-color: var(--primary-color);
+        --paper-slider-knob-color: var(--main-slider-color);
+        --paper-slider-knob-start-color: var(--main-slider-color);
+        --paper-slider-knob-start-border-color: var(--main-slider-color);
       }
 
 

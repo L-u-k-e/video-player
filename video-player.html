@@ -454,6 +454,7 @@
         var mult = this._convert_range(new_value, old_range, new_range);
         var transform = 'scale(' + mult + ',' +  mult + ')';
         this.transform(transform, this.$.video);
+        this._offset_changed(this.xOffset, this.yOffset); //viewport needs to be re-clamped.
       },
 
       _convert_range: function(number, old_range, new_range) {

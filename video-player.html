@@ -298,7 +298,7 @@
         'video.ended': 'update_time',
         'video.loadedmetadata': '_set_duration',
         'progress_bar.mouseover': '_toggle_progress_hover_state',
-        'progress_bar.mouseout': '_toggle_progress_hover_state',
+        'progress_bar.mouseout': '_toggle_progress_hover_state'
       },
 
 
@@ -393,6 +393,7 @@
           var event = Polymer.dom(event);
           if (event.localTarget == this.$.progress_bar) { 
             this.currentTime = this.$.video.duration * (this.$.progress_bar.value / 100);
+            this.playState = this.$.progress_bar.pointerDown ? 'paused' : 'playing';
           } else if (event.localTarget == this.$.video) {
             if (this.$.video.ended) {
               this.playState = 'ended'; 
@@ -404,6 +405,7 @@
         } else {  
           // the user is calling this function directly. 
           this.currentTime = (delta ? this.currentTime : 0) + time;
+          console.log('?');
         }
       },
 
@@ -427,11 +429,12 @@
        _play_state_changed: function (new_value, old_value) {
         if (['playing', 'paused', 'ended'].indexOf(new_value) === -1) { 
           this.playState = old_value; 
+          console.log(new_value);
           return;
         }
 
         if (new_value == 'playing') { 
-          if (old_value = 'ended') { this.currentTime = 0; }
+          if (old_value == 'ended') { this.currentTime = 0; }
           this.$.video.play();  
         } else { 
           this.$.video.pause(); 

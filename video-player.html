@@ -7,7 +7,44 @@
 <link rel="import" href="../paper-styles/paper-styles.html">
 
 <link rel="import" href="../fullscreen-enabled/fullscreen-enabled.html">
+
 <!--
+  `video-player` is a super-cool, well... video player! 
+
+  It's got all the controls you'd expect, plus a few you probably wouldn't, like zoom/pan. 
+  You can use it as a drop-in replacement for the (boring) native `video` element:
+
+```
+<video-player id="video">
+  <source src="buck_bunny.mp4" type="video/mp4">
+  <source src="buck_bunny.ogg" type="video/ogg">
+  Your browser does not support the <code>video</code> element.
+</video-player>
+```
+
+
+If you need to interact with the video player programatically, you can just manipulate the properties declaratively: 
+
+```
+this.$.video.volumeLevel = 50;       //Set volume level to 50.
+this.$.video.currentTime = 130.0;    //Jump to the 1:30s mark.
+this.$.video.fullscreen = true;      //Go fullscreen.
+```
+
+Imperative methods are also provided for convenience:
+```
+this.$.video.toggle_play();          // Toggle play state.
+this.$.video.pan(-30, 500);          // Pan the video to the specified x/y offsets. 
+``` 
+
+
+## Styling
+
+Custom property | Description | Default
+----------------|-------------|----------
+`--video-player-progress-color` | The color of the progress bar | `--primary-color`
+`--video-player-secondary-color` | The color of the zoom and volume sliders  | `--accent-color`
+
   @demo demo/index.html
 -->
 <dom-module id="video-player">
@@ -42,7 +79,7 @@
         top: calc(-15px - var(--paper-slider-height, 2px));
         z-index: 1000;
         --paper-slider-knob-start-border-color: transparent;
-        --paper-slider-active-color: var(--primary-color);
+        --paper-slider-active-color: var(--video-player-progress-color, --primary-color);
         --paper-slider-knob-color: transparent;
         
         width: calc(100% + 36px + var(--paper-slider-height, 2px));
@@ -97,7 +134,7 @@
       }
 
       .slider_control {
-        --volume-slider-color: var(--accent-color);
+        --volume-slider-color: var(--video-player-secondary-color, --accent-color);
         --paper-slider-active-color: var(--volume-slider-color);
         --paper-slider-knob-color: var(--volume-slider-color);
         max-width: 0px;
@@ -131,7 +168,7 @@
       autoplay="[[autoplay]]" 
       loop="[[loop]]"
       volume="[[_get_ratio(volumeLevel)]]"
-      on-track="pan_video"
+      on-track="pan"
     >
       <content></content>
     </video>
@@ -374,7 +411,7 @@
        *   - if `delta` is **falsey**: `x` and `y` are direct mapped to `[xy]Offset`.  
        *   - if `delta` is **truthy**: `x` and `y` are treated as delta changes to `[xy]Offset`.
        */
-      pan_video: function (x, y, delta) {
+      pan: function (x, y, delta) {
         var detail = y;
         if (x.target) {
           this.xOffset = this.xOffsetBeforeDrag + detail.dx;

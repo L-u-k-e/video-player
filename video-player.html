@@ -127,7 +127,9 @@
 
 
 
-    <video id="video" 
+    <video id="video"
+      autoplay="[[autoplay]]" 
+      loop="[[loop]]"
       volume="[[_get_ratio(volumeLevel)]]"
       on-track="pan_video"
     >
@@ -211,6 +213,16 @@
 
 
       properties: {
+        /** Whether the video will automatically begin playing once it loads. */
+        autoplay: {
+          type: Boolean, 
+          value: false
+        },
+        /** Whether the video will loop to the beginning when playback finishes */
+        loop: {
+          type: Boolean, 
+          value: false
+        },
         /** The current play state. May be: `playing` / `paused` / `ended`. */
         playState: {
           type: String,

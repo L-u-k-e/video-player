@@ -428,7 +428,6 @@
        _play_state_changed: function (new_value, old_value) {
         if (['playing', 'paused', 'ended'].indexOf(new_value) === -1) { 
           this.playState = old_value; 
-          console.log(new_value);
           return;
         }
 

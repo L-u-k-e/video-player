@@ -81,7 +81,7 @@ Custom property | Description | Default
         width: calc(100% + 36px + var(--paper-slider-height, 2px));
         margin-left: calc(-20px - var(--paper-slider-height, 2px));
         border: none;
-        
+
         --paper-slider-knob-start-border-color: transparent;
         --main-slider-color: var(--video-player-progress-color, --primary-color);
         --paper-slider-active-color: var(--main-slider-color);
@@ -286,7 +286,8 @@ Custom property | Description | Default
         volumeLevel: {
           type: Number,
           value: 50,
-          notify: true
+          notify: true,
+          observer: '_volume_level_changed'
         },
         /** The video duration */
         duration: {
@@ -497,6 +498,12 @@ Custom property | Description | Default
         this.$.video.muted = new_value;
       },
 
+      _volume_level_changed: function (new_value, old_value) {
+        if (new_value > 0 && this.muted) {
+          this._saved_volume_level = new_value;
+          this.muted = false;
+        }
+      },
 
       _zoom_level_changed: function (new_value, old_value) {
         var old_range = [0, 100];

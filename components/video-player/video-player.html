@@ -1,0 +1,658 @@
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../iron-icons/iron-icons.html">
+<link rel="import" href="../iron-icons/av-icons.html">
+<link rel="import" href="../paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../paper-slider/paper-slider.html">
+<link rel="import" href="../iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../paper-styles/paper-styles.html">
+
+<link rel="import" href="../fullscreen-enabled/fullscreen-enabled.html">
+
+<!--
+  `video-player` is a super-cool, well... video player! 
+
+  It's got all the controls you'd expect, plus a few you probably wouldn't, like zoom/pan. 
+  You can use it as a drop-in replacement for the (boring) native `video` element:
+
+```
+<video-player id="video">
+  <source src="buck_bunny.mp4" type="video/mp4">
+  <source src="buck_bunny.ogg" type="video/ogg">
+  Your browser does not support the <code>video</code> element.
+</video-player>
+```
+
+
+If you need to interact with the video player programatically, you can just manipulate the properties declaratively: 
+
+```
+this.$.video.volumeLevel = 50;       //Set volume level to 50.
+this.$.video.currentTime = 130.0;    //Jump to the 1:30s mark.
+this.$.video.fullscreen = true;      //Go fullscreen.
+```
+
+Imperative methods are also provided for convenience:
+```
+this.$.video.toggle_play();          // Toggle play state.
+this.$.video.pan(-30, 500);          // Pan the video to the specified x/y offsets. 
+``` 
+
+
+
+# Important Info:
+
+  - This element requires that an instance of **lodash** be instantiated in the global scope prior to its instantiation.
+
+
+
+## Styling
+
+Custom property | Description | Default
+----------------|-------------|----------
+`--video-player-progress-color` | The color of the progress bar | `--primary-color`
+`--video-player-secondary-color` | The color of the zoom and volume sliders  | `--accent-color`
+
+  @demo demo/index.html
+-->
+<dom-module id="video-player">
+  <template>
+    <style>
+
+      :host {
+        display: block;
+        max-height: 100vh;
+        max-width: 100vw;
+        overflow: hidden;
+        position: relative;
+        @apply(--paper-font-common-base);
+      }
+
+      :host(:not([fullscreen])) {
+        width: 854px;
+      };
+
+      video {
+        vertical-align: top;
+        width: 100%;
+        position: relative;
+      }
+
+
+
+
+
+      #progress_bar {
+        position: absolute;
+        top: calc(-15px - var(--paper-slider-height, 2px));
+        z-index: 1000;
+        width: calc(100% + 36px + var(--paper-slider-height, 2px));
+        margin-left: calc(-20px - var(--paper-slider-height, 2px));
+        border: none;
+
+        --paper-slider-knob-start-border-color: transparent;
+        --main-slider-color: var(--video-player-progress-color, --primary-color);
+        --paper-slider-active-color: var(--main-slider-color);
+        --paper-slider-knob-color: transparent;
+      }
+
+      #progress_bar.hover {
+        --paper-slider-knob-color: var(--main-slider-color);
+        --paper-slider-knob-start-color: var(--main-slider-color);
+        --paper-slider-knob-start-border-color: var(--main-slider-color);
+      }
+
+
+
+
+
+      #controls {
+        @apply(--layout-horizontal);
+        @apply(--layout-center);
+        position: relative;
+        height: 40px;
+        width: 100%;
+        background-color: rgb(0,0,0);   
+        color: white;
+      }
+
+      #spacer {
+        @apply(--layout-flex);
+      }
+
+      :host([fullscreen]) #controls {
+        position: absolute;
+        bottom:0; 
+        background-color: rgba(0,0,0,0.3);
+        opacity:0;      
+        transition: opacity .25s cubic-bezier(0.0,0.0,0.2,1);
+      }
+
+      :host([fullscreen]) #controls:hover {
+        opacity: 1;
+      }
+
+
+
+
+
+      .slider_container {
+        height: 100%;
+        @apply(--layout-horizontal);
+        @apply(--layout-center);
+      }
+
+      .slider_control {
+        --volume-slider-color: var(--video-player-secondary-color, --accent-color);
+        --paper-slider-active-color: var(--volume-slider-color);
+        --paper-slider-knob-color: var(--volume-slider-color);
+        max-width: 0px;
+        opacity: 0;
+        transition: all .2s cubic-bezier(0.4,0.0,1,1);
+        transition-delay: .2s;
+      }
+      .slider_container:hover .slider_control {
+        max-width:100px;
+        opacity: 1;
+        padding-right: 15px;
+        transition-delay: .2s;
+      }
+
+      #volume_controls {
+        padding-right: 15px;
+      }
+    </style>
+    
+
+
+
+
+
+
+
+
+
+
+    <video id="video"
+      autoplay="[[autoplay]]" 
+      loop="[[loop]]"
+      volume="[[_get_ratio(volumeLevel)]]"
+      on-track="pan"
+    >
+      <content></content>
+    </video>
+
+    
+    <div id="controls">
+      
+      <paper-slider id="progress_bar" 
+        on-change="update_time"
+      ></paper-slider>
+
+
+      <paper-icon-button 
+        icon="[[_get_play_icon(playState)]]"              
+        on-tap="toggle_play"
+      ></paper-icon-button>
+      
+
+      <div id="zoom_controls" class="slider_container">
+        <paper-icon-button 
+          icon="[[_get_zoom_icon(zoomLevel)]]"              
+          on-tap="toggle_zoom"
+        ></paper-icon-button>
+        <paper-slider id="zoom_slider" class="slider_control" 
+          immediate-value="{{zoomLevel}}" 
+          value="[[zoomLevel]]"
+        ></paper-slider>
+      </div>
+
+
+      <div id="volume_controls" class="slider_container">
+        <paper-icon-button 
+          icon="[[_get_volume_icon(muted, volumeLevel)]]"   
+          on-tap="toggle_mute"
+        ></paper-icon-button>
+        <paper-slider id="volume_slider" class="slider_control" 
+          immediate-value="{{volumeLevel}}" 
+          value="[[volumeLevel]]"
+        ></paper-slider>
+      </div>
+
+
+      <span>[[_get_time_string(currentTime, duration)]]</span> 
+      
+
+      <div id="spacer"></div>
+      
+
+      <paper-icon-button hidden 
+        icon="settings"
+      ></paper-icon-button>
+      
+
+      <paper-icon-button 
+        icon="[[_get_fullscreen_icon(fullscreen)]]"                               
+        on-tap="toggle_fullscreen"
+      ></paper-icon-button>
+
+
+    </div>
+  </template>
+
+
+
+
+
+
+
+
+
+
+
+  <script>
+    Polymer({
+      is: 'video-player',
+
+
+      behaviors: [Behaviors.fullscreen_enabled],
+
+
+      properties: {
+        /** Whether the video will automatically begin playing once it loads. */
+        autoplay: {
+          type: Boolean, 
+          value: false
+        },
+        /** Whether the video will loop to the beginning when playback finishes */
+        loop: {
+          type: Boolean, 
+          value: false
+        },
+        /** The current play state. May be: `playing` / `paused` / `ended`. */
+        playState: {
+          type: String,
+          value: 'paused',
+          notify: true,
+          observer: '_play_state_changed'
+        },
+        /** Whether the video is currently muted. */
+        muted: {
+          type: Boolean,
+          value: false,
+          notify: true,
+          observer: '_muted_changed'
+        },
+        /** The current time of the video. */
+        currentTime: {
+          type: Number,
+          value: 0.00,
+          notify: true,
+          observer: '_current_time_changed'
+        },
+        /** The current volume level. */
+        volumeLevel: {
+          type: Number,
+          value: 50,
+          notify: true,
+          observer: '_volume_level_changed'
+        },
+        /** The video duration */
+        duration: {
+          type: Number,
+          value: 0,
+          notify: true
+        },
+        /* The current zoom level as a percentage of the maximum zoom factor. */
+        zoomLevel: {
+          type: Number,
+          value: 0,
+          notify: true,
+          observer: '_zoom_level_changed'
+        },
+        /* The maximimum zoom factor. */
+        maxZoom: {
+          type: Number, 
+          value: 4,
+          notify: true,
+          observer: '_max_zoom_changed' 
+        },
+        /* The X distance from the pixel at the center of the viewable region to the pixel at the center of the scaled video. */
+        xOffset: {
+          type: Number,
+          value: 0,
+          notify: true,
+        },
+        /* The Y distance from the pixel at the center of the viewable region to the pixel at the center of the scaled video. */
+        yOffset: {
+          type: Number, 
+          value: 0,
+          notify: true,
+        },
+        /* The `xOffset` before any currently occurring drag gestures. */
+        xOffsetBeforeDrag: {
+          type: Number,
+          value: 0,
+          notify: true,
+          readOnly: true
+        },
+        /* The `yOffset` before any currently occurring drag gestures. */
+        yOffsetBeforeDrag: {
+          type: Number,
+          value: 0,
+          notify: true,
+          readOnly: true
+        }
+      },
+
+
+      observers: [
+        '_offset_changed(xOffset, yOffset)'
+      ],
+
+
+      listeners: {
+        'video.tap': 'toggle_play',
+        'video.timeupdate': 'update_time',
+        'video.ended': 'update_time',
+        'video.loadedmetadata': '_set_duration',
+        'progress_bar.mouseover': '_toggle_progress_hover_state',
+        'progress_bar.mouseout': '_toggle_progress_hover_state'
+      },
+
+
+      /* Duration can't be set until the video's metadata loads */
+      _set_duration: function (event, detail) {
+        this.duration = this.$.video.duration;
+      },
+
+
+
+
+
+
+
+
+
+      /**
+       * State Mutators: 
+       *  Change state variables based on user interactions.  
+       *  Can also be called directly by the user for convenience.
+       */
+
+
+       /** Toggles the play state between `paused`/`ended` and `playing`. */
+      toggle_play: function () {
+        if (this.playState == 'paused' || this.playState == 'ended') {
+          this.playState = 'playing';
+        } else {
+          this.playState = 'paused';
+        }     
+      },
+
+
+      /** Toggles the mute state. Saves/restores the volume level. */
+      toggle_mute: function () {
+        if (this.muted) {
+          this.muted = false;
+          this.volumeLevel = this._saved_volume_level;
+        } else {
+          this._saved_volume_level = this.volumeLevel;
+          this.volumeLevel = 0;
+          this.muted = true;
+        }
+      },
+
+
+      /** Toggles fullscreen mode */
+      toggle_fullscreen: function () {
+        this.fullscreen = !this.fullscreen;
+      },
+
+
+      /** Toggles the zoom level between 0 and 50. */
+      toggle_zoom: function () {
+        this.zoomLevel = this.zoomLevel > 0 ? 0 : 50;
+      },
+
+
+      /** 
+       * Pans the video. 
+       *   - if `delta` is **falsey**: `x` and `y` are direct mapped to `[xy]Offset`.  
+       *   - if `delta` is **truthy**: `x` and `y` are treated as delta changes to `[xy]Offset`.
+       */
+      pan: function (x, y, delta) {
+        var detail = y;
+        if (x.target) {
+          this.xOffset = this.xOffsetBeforeDrag + detail.dx;
+          this.yOffset = this.yOffsetBeforeDrag + detail.dy;
+          if (detail.state == 'end') {
+            this._setXOffsetBeforeDrag(parseFloat(this.$.video.style.left, 10));
+            this._setYOffsetBeforeDrag(parseFloat(this.$.video.style.top,  10));
+          }
+        } else if (delta) {
+          this.xOffset = this.xOffset + x; 
+          this.yOffset = this.yOffset + y; 
+        } else {
+          this.xOffset = x;
+          this.yOffset = y;
+        }
+      },
+
+
+      /**
+       * Updates `currentTime`
+       *   - if `delta` is **falsey**: `time` is direct mapped to `currentTime`.  
+       *   - if `delta` is **truthy**: `time` is treated as a delta change to `currentTime`.
+       */
+      update_time: function (time, delta) {
+        var event = time;
+        if (event.target) { 
+          // This function to be invoked as an event handler. 
+          var event = Polymer.dom(event);
+          if (event.localTarget == this.$.progress_bar) { 
+            this.currentTime = this.$.video.duration * (this.$.progress_bar.value / 100);
+            this.playState = this.$.progress_bar.pointerDown ? 'paused' : 'playing';
+          } else if (event.localTarget == this.$.video) {
+            if (this.$.video.ended) {
+              this.playState = 'ended'; 
+            } else {
+              this._incrementing_time = true;
+              this.currentTime = this.$.video.currentTime;
+            }
+          } 
+        } else {  
+          // the user is calling this function directly. 
+          this.currentTime = (delta ? this.currentTime : 0) + time;
+        }
+      },
+
+
+
+
+
+
+
+
+
+
+
+      /*
+       * Video Controllers (State Observers): 
+       *   Respond to state changes.
+       *   Validating first, then manipulate the video element accordingly.  
+       */
+
+
+       _play_state_changed: function (new_value, old_value) {
+        if (['playing', 'paused', 'ended'].indexOf(new_value) === -1) { 
+          this.playState = old_value; 
+          return;
+        }
+
+        if (new_value == 'playing') { 
+          if (old_value == 'ended') { this.currentTime = 0; }
+          this.$.video.play();  
+        } else { 
+          this.$.video.pause(); 
+          if (new_value == 'ended' && this.currentTime !== this.duration) {
+            this.currentTime = this.duration;
+          }
+        }
+       },
+
+
+      _muted_changed: function (new_value, old_value) {
+        this.$.video.muted = new_value;
+      },
+
+      _volume_level_changed: function (new_value, old_value) {
+        if (new_value > 0 && this.muted) {
+          this._saved_volume_level = new_value;
+          this.muted = false;
+        }
+      },
+
+      _zoom_level_changed: function (new_value, old_value) {
+        var old_range = [0, 100];
+        var new_range = [1, this.maxZoom];
+        var mult = this._convert_range(new_value, old_range, new_range);
+        var transform = 'scale(' + mult + ',' +  mult + ')';
+        this.transform(transform, this.$.video);
+        this._offset_changed(this.xOffset, this.yOffset); //viewport needs to be re-clamped.
+      },
+
+      _convert_range: function(number, old_range, new_range) {
+        var old_diff = old_range[1] - old_range[0];
+        var new_diff = new_range[1] - new_range[0];
+        var value = (((number - old_range[0]) * new_diff) / old_diff) + new_range[0];
+        return value;
+      },
+
+
+      _max_zoom_changed: function (new_value, old_value) {
+        this._zoom_level_changed(this.zoomLevel);
+      },
+
+
+      _offset_changed: function (x, y) {
+        var self = this;
+        var components = {
+          x: {value: x, dimension: 'width',  css: 'left'},
+          y: {value: y, dimension: 'height', css: 'top' }
+        };
+
+        var scaled_dimensions = this.$.video.getBoundingClientRect();
+        _.each(components, function (obj, key) {
+          var unscaled = self.$.video[_.camelCase('offset '+obj.dimension)];
+          var scaled = scaled_dimensions[obj.dimension];  
+          var boundary = (scaled - unscaled) / 2;
+          var value = _.clamp(obj.value, -boundary, boundary);
+          self.$.video.style[obj.css] = value + 'px';
+        });
+      },
+
+
+      _current_time_changed: function(new_value, old_value) {
+        if(this.duration > 0 && !_.inRange(new_value, this.duration+0.0001)) {
+          this.currentTime = old_value;
+          return;
+        }
+        this.$.progress_bar.value = (100 / this.duration) * new_value;
+        if (!this._incrementing_time) { 
+          this.$.video.currentTime = new_value; 
+        }
+        this._incrementing_time = false;
+      },
+
+
+
+
+
+
+
+
+      /*
+       * State Reflectors:
+       *  Ensure that the view reflects the current state of the object. 
+       */
+
+
+      _get_play_icon: function (play_state) {
+        var icon = 'av:play-arrow';
+        if (play_state == 'playing') { 
+          icon = 'av:pause' 
+        } else if (play_state == 'ended') {
+          icon = 'av:replay';
+        }
+        return icon;
+      },
+
+
+      _get_volume_icon: function (muted, volume_level) {
+        var icon = 'av:volume-up';
+        if (muted || volume_level == 0) {
+          icon = 'av:volume-mute';  
+        } else if (volume_level <= 50) {
+          icon = 'av:volume-down';
+        }
+        return icon;
+      },
+
+
+      _get_fullscreen_icon: function(fullscreen) {
+        var icon = fullscreen ? 'fullscreen-exit' : 'fullscreen';
+        return icon;
+      },
+
+
+      _get_zoom_icon: function(zoom_level) {
+        var icon = zoom_level > 0 ? 'zoom-out' : 'zoom-in';
+        return icon;
+      },
+
+
+      _get_time_string: function (current_time, duration) {
+        var curr = this._format_time(current_time);
+        var durr = this._format_time(duration);
+        return curr + ' / ' + durr;
+      },
+
+      _format_time: function (seconds) {
+        var minutes = Math.floor(seconds / 60);
+        minutes = (minutes >= 10) ? minutes : "0" + minutes;
+        var seconds = Math.floor(seconds % 60);
+        seconds = (seconds >= 10) ? seconds : "0" + seconds;
+        return minutes + ":" + seconds;
+      },
+
+
+
+
+
+
+
+
+
+
+
+      /* Something needs to be done to make these adhere to the structural style above */
+
+      _toggle_progress_hover_state: function (event, detail) {
+        this.$.progress_bar.classList.toggle('hover');
+        this.updateStyles();
+      },
+
+      _get_ratio: function (value_1_to_100) {
+        return value_1_to_100 / 100;
+      },
+
+
+
+
+
+
+
+
+    });
+  </script>
+</dom-module>

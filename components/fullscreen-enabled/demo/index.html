@@ -1,0 +1,34 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+    
+    <title>fullscreen-enabled Demo</title>
+
+    <script src="../../webcomponentsjs/webcomponents-lite.js"></script>
+    <script src="../../lodash/lodash.min.js"></script>
+
+    <link rel="import" href="a-cat.html">
+    <link rel="import" href="../../iron-flex-layout/iron-flex-layout.html">
+    <style>
+      body {
+        height: 100vh;
+        @apply(--layout-horizontal);
+        @apply(--layout-center);
+      }
+      a-cat {
+        width: 50%;
+        height: 50%;
+      }
+    </style>
+
+  </head>
+
+
+  <body>
+    <a-cat></a-cat> 
+  </body>
+
+
+</html>

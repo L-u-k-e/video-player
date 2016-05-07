@@ -1,0 +1,83 @@
+<script>
+  var Behaviors = Behaviors || {};
+  (function () {  
+
+
+    var possibly_supported = [
+      {enter: 'requestFullscreen',       exit: 'exitFullscreen',         event: 'fullscreenchange'       },
+      {enter: 'mozRequestFullScreen',    exit: 'mozCancelFullScreen',    event: 'mozfullscreenchange'    },
+      {enter: 'webkitRequestFullScreen', exit: 'webkitCancelFullScreen', event: 'webkitfullscreenchange' },
+      {enter: 'msRequestFullscreen',     exit: 'msExitFullscreen',       event: 'msfullscreenchange'     }
+    ];
+
+    
+    var entering_fullscreen = false;
+    var setup_listeners = function () {
+      var self = this;
+      _.each(possibly_supported, function (obj) {
+        document.addEventListener(obj.event, function () {
+          if (entering_fullscreen) { entering_fullscreen = false; } 
+          else { self.fullscreen = false; }
+        });
+      });
+    };
+
+
+    var fullscreen_state_variable_changed = function (new_value, old_value) {     
+      reflect_state.call(this, new_value);
+      this._fullscreen_changed(new_value, old_value);  
+    };
+
+
+    var temp_div = document.createElement('div');
+    var enter = _.find(possibly_supported, function(obj) { return temp_div[obj.enter] }).enter;
+    var exit  = _.find(possibly_supported, function(obj) { return document[obj.exit]  }).exit;
+    var reflect_state = function (fullscreen_desired) {
+      entering_fullscreen = fullscreen_desired;
+      if (fullscreen_desired) { this[enter](); } 
+      else { document[exit](); }
+    };
+
+
+  /**
+   * This behavior teaches elements how to use the Fullscreen API.
+   *
+   * Just toggle the <code>fullscreen</code> property!
+   *
+   * A callback named: <code>_fullscreen_changed(new_value, old_value)</code> is also provided. 
+   * 
+   * @demo demo/index.html
+   * @polymerBehavior
+   */
+    Behaviors.fullscreen_enabled = Object.freeze({
+      
+
+      properties: {
+        /** Gets/sets the fullscreen state. */
+        fullscreen: {
+          type: Boolean,
+          value: false,
+          notify: true,
+          reflectToAttribute: true,
+          observer: '__fullscreen_state_variable_changed___'
+        },
+      },
+
+
+      ready: setup_listeners,
+
+
+      __fullscreen_state_variable_changed___: fullscreen_state_variable_changed,
+
+
+      /** 
+       * This callback is invoked when the fullscreen property changes. 
+       * @callback
+       * @public
+       */
+      _fullscreen_changed: function (new_value, old_value) {},
+
+
+    });
+  }());
+</script>

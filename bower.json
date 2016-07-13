@@ -29,6 +29,7 @@
     "paper-styles": "polymerElements/paper-styles#^1.1.4",
     "lodash": "^4.6.1",
     "fullscreen-enabled": "L-u-k-e/fullscreen-enabled#^0.5.0",
+    "loading-overlay": "^1.0.0"
   },
   "devDependencies": {
     "iron-component-page": "PolymerElements/iron-component-page#^1.0.0",

@@ -7,6 +7,7 @@
 <link rel="import" href="../paper-styles/paper-styles.html">
 
 <link rel="import" href="../fullscreen-enabled/fullscreen-enabled.html">
+<link rel="import" href="../loading-overlay/loading-overlay.html">
 
 <!--
   `video-player` is a super-cool, well... video player! 
@@ -65,6 +66,7 @@ Custom property | Description | Default
         overflow: hidden;
         position: relative;
         @apply(--paper-font-common-base);
+        background: black;
       }
 
       :host(:not([fullscreen])) {
@@ -77,7 +79,9 @@ Custom property | Description | Default
         position: relative;
       }
 
-
+      loading-overlay {
+        background: black;
+      }
 
 
 
@@ -171,6 +175,7 @@ Custom property | Description | Default
 
 
 
+    <loading-overlay active="[[!loaded]]"></loading-overlay>
 
     <video id="video"
       autoplay="[[autoplay]]" 
@@ -263,6 +268,12 @@ Custom property | Description | Default
           type: Boolean, 
           value: false
         },
+        /** True once the video has fired the `canplay` event. */
+        loaded: {
+          type: Boolean,
+          value: false,
+          readOnly: true
+        },
         /** Whether the video will loop to the beginning when playback finishes */
         loop: {
           type: Boolean, 
@@ -351,6 +362,7 @@ Custom property | Description | Default
 
 
       listeners: {
+        'video.canplay':'_update_ready_state',
         'video.tap': 'toggle_play',
         'video.timeupdate': 'update_time',
         'video.ended': 'update_time',
@@ -365,7 +377,9 @@ Custom property | Description | Default
         this.duration = this.$.video.duration;
       },
 
-
+      _update_ready_state: function (event, detail) {
+        this._setLoaded(true);
+      },
 
 
 
